@@ -5,6 +5,17 @@ import type { SortOption } from "./useUrlState";
 
 const ITEMS_PER_PAGE = 12;
 
+const DEFAULT_CATEGORIES = [
+  "Accessories",
+  "Appliances",
+  "Audio/Video",
+  "Electronics",
+  "Furniture",
+  "Gaming",
+  "Office Supplies",
+  "Storage",
+];
+
 interface UseInventoryOptions {
   debouncedSearch: string;
   selectedStore: Store | null;
@@ -20,10 +31,8 @@ export function useInventory({ debouncedSearch, selectedStore, sortBy }: UseInve
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  // Infinite scroll sentinel ref
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  // Fetch inventory with pagination support
   const fetchInventory = useCallback(
     async (searchTerm: string, storeId?: string, pageNum: number = 1, append = false) => {
       if (append) {
@@ -58,21 +67,18 @@ export function useInventory({ debouncedSearch, selectedStore, sortBy }: UseInve
     []
   );
 
-  // Load more handler for infinite scroll
   const loadMore = useCallback(() => {
     if (!loadingMore && hasMore) {
       fetchInventory(debouncedSearch, selectedStore?._id, currentPage + 1, true);
     }
   }, [loadingMore, hasMore, debouncedSearch, selectedStore, currentPage, fetchInventory]);
 
-  // Reset and refetch
   const resetAndFetch = useCallback(() => {
     setCurrentPage(1);
     setHasMore(true);
     fetchInventory(debouncedSearch, selectedStore?._id, 1, false);
   }, [debouncedSearch, selectedStore, fetchInventory]);
 
-  // Sort inventory client-side
   const sortedInventory = useMemo(() => {
     const sorted = [...inventory];
     switch (sortBy) {
@@ -93,20 +99,18 @@ export function useInventory({ debouncedSearch, selectedStore, sortBy }: UseInve
     }
   }, [inventory, sortBy]);
 
-  // Categories derived from inventory
   const categories = useMemo(() => {
-    const cats = new Set(inventory.map((item) => item.product.category));
-    return Array.from(cats).sort();
+    const fromInventory = new Set(inventory.map((item) => item.product.category));
+    const combined = new Set([...DEFAULT_CATEGORIES, ...fromInventory]);
+    return Array.from(combined).sort();
   }, [inventory]);
 
-  // Reset and fetch when filters change
   useEffect(() => {
     setCurrentPage(1);
     setHasMore(true);
     fetchInventory(debouncedSearch, selectedStore?._id, 1, false);
   }, [debouncedSearch, selectedStore, fetchInventory]);
 
-  // IntersectionObserver for infinite scroll
   useEffect(() => {
     const sentinel = loadMoreRef.current;
     if (!sentinel) return;

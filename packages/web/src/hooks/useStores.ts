@@ -11,7 +11,6 @@ export function useStores() {
     return data;
   }, []);
 
-  // Total product count across all stores
   const allProductsCount = useMemo(
     () => stores.reduce((sum, store) => sum + (store.productCount ?? 0), 0),
     [stores]

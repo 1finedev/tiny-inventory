@@ -1,6 +1,3 @@
-# Coolify: assign a domain per service. Non-80 ports → add port to domain
-# (e.g. https://app.example.com:3000 for web, https://api.example.com:4000 for server).
-# Set VITE_API_URL to your API URL; Coolify injects SERVICE_URL_WEB (server uses it for CORS).
 services:
   mongodb:
     image: mongo:7

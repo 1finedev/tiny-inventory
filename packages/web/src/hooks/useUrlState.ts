@@ -17,17 +17,14 @@ interface UseUrlStateOptions {
 export function useUrlState({ stores }: UseUrlStateOptions) {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Read from URL
   const storeIdFromUrl = searchParams.get("store") || "";
   const searchFromUrl = searchParams.get("search") || "";
   const sortFromUrl = (searchParams.get("sort") as SortOption) || "name";
 
-  // Local search state for debouncing
   const [search, setSearch] = useState(searchFromUrl);
   const [debouncedSearch, setDebouncedSearch] = useState(searchFromUrl);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Derived state
   const selectedStore = useMemo(
     () => stores.find((s) => s._id === storeIdFromUrl) || null,
     [stores, storeIdFromUrl]
@@ -67,7 +64,6 @@ export function useUrlState({ stores }: UseUrlStateOptions) {
     [updateUrlParams]
   );
 
-  // Debounce search input and sync to URL
   useEffect(() => {
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     searchTimeout.current = setTimeout(() => {

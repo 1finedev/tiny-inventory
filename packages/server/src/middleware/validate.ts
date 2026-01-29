@@ -14,7 +14,7 @@ export function validate(schema: ZodSchema) {
         try {
           body = await c.req.json();
         } catch {
-          // Invalid JSON body - continue with empty object
+          // Invalid JSON - continue with empty object
         }
       }
 

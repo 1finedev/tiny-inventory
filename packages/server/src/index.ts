@@ -10,7 +10,6 @@ import { inventoryRoutes, storeRoutes, productRoutes } from "@/routes";
 
 const app = new Hono();
 
-// Security middleware
 app.use("*", secureHeaders());
 app.use("*", requestId());
 app.use("*", timeout(30000));
@@ -22,7 +21,6 @@ app.use(
   }),
 );
 
-// CORS: CORS_ORIGIN, or SERVICE_URL_WEB (e.g. Coolify), or localhost
 const corsOrigins = Bun.env.CORS_ORIGIN
   ? Bun.env.CORS_ORIGIN.split(",").map((o) => o.trim())
   : Bun.env.SERVICE_URL_WEB
@@ -38,22 +36,18 @@ app.use(
   }),
 );
 
-// Request logging (skip in dev)
 if (Bun.env.NODE_ENV !== "development") {
   app.use("*", logger());
 }
 
-// Health check
 app.get("/api/v1/alive", (c) =>
   c.json({ status: "success", message: "Server is running" }),
 );
 
-// API routes
 app.route("/api/v1/inventory", inventoryRoutes);
 app.route("/api/v1/stores", storeRoutes);
 app.route("/api/v1/products", productRoutes);
 
-// Error handling
 app.notFound((c) =>
   c.json(
     { status: "error", message: `Not found: ${c.req.method} ${c.req.path}` },
@@ -62,7 +56,6 @@ app.notFound((c) =>
 );
 app.onError(errorHandler);
 
-// Validate required environment variables
 function validateEnv() {
   const required = ["MONGODB_URI"];
   const missing = required.filter((key) => !Bun.env[key]);
@@ -77,7 +70,6 @@ function validateEnv() {
   }
 }
 
-// Start server
 async function main() {
   validateEnv();
 

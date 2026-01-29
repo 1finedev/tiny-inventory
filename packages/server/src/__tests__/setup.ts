@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import { connectDatabase } from "@/config/database";
-// Import models to ensure they're registered with mongoose
 import "@/models";
 
 let isConnected = false;

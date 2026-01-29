@@ -4,7 +4,6 @@ import { setupTestDatabase, teardownTestDatabase, clearCollections } from "./set
 import { storeRoutes, productRoutes, inventoryRoutes } from "@/routes";
 import { Store, Inventory, Product } from "@/models";
 
-// Create test app
 const app = new Hono();
 app.route("/api/v1/stores", storeRoutes);
 app.route("/api/v1/products", productRoutes);

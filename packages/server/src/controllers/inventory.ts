@@ -158,7 +158,6 @@ export async function updateInventory(c: Context) {
     throw new AppError("Invalid product ID", 400);
   }
 
-  // Validate store and product exist
   const storeQuery = mongoose.Types.ObjectId.isValid(storeIdOrSlug)
     ? { _id: new mongoose.Types.ObjectId(storeIdOrSlug) }
     : { slug: storeIdOrSlug };
