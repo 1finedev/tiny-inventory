@@ -1,0 +1,72 @@
+# Coolify: assign a domain per service. Non-80 ports → add port to domain
+# (e.g. https://app.example.com:3000 for web, https://api.example.com:4000 for server).
+# Set VITE_API_URL to your API URL; Coolify injects SERVICE_URL_WEB (server uses it for CORS).
+services:
+  mongodb:
+    image: mongo:7
+    container_name: tiny-inventory-mongodb-${NODE_ENV:-prod}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: tiny-inventory
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: ${RESTART_POLICY:-no}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  server:
+    build:
+      context: .
+      dockerfile: packages/server/Dockerfile
+    container_name: tiny-inventory-server-${NODE_ENV:-prod}
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      MONGODB_URI: mongodb://mongodb:27017/tiny-inventory
+      NODE_ENV: ${NODE_ENV:-development}
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+      SERVICE_URL_WEB: ${SERVICE_URL_WEB:-}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: ${RESTART_POLICY:-no}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  web:
+    build:
+      context: .
+      dockerfile: packages/web/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:4000}
+    container_name: tiny-inventory-web-${NODE_ENV:-prod}
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      SERVICE_URL_SERVER: ${SERVICE_URL_SERVER:-}
+      SERVICE_URL_WEB: ${SERVICE_URL_WEB:-}
+    depends_on:
+      - server
+    restart: ${RESTART_POLICY:-no}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  mongodb_data:

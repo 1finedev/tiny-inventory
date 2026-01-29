@@ -1,0 +1,5 @@
+# Bun configuration for testing React components
+[test]
+# Use jsdom environment for React component testing
+environment = "jsdom"
+preload = ["./src/__tests__/setup.ts"]
