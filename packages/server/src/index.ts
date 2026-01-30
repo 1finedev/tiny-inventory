@@ -4,7 +4,7 @@ import { logger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
 import { timeout } from "hono/timeout";
 import { requestId } from "hono/request-id";
-import { connectDatabase } from "@/config";
+import { connectDatabase, seedDatabase } from "@/config";
 import { errorHandler, rateLimit } from "@/middleware";
 import { inventoryRoutes, storeRoutes, productRoutes } from "@/routes";
 
@@ -76,6 +76,7 @@ async function main() {
   const PORT = parseInt(Bun.env.PORT || "4000", 10);
 
   await connectDatabase();
+  await seedDatabase();
 
   const server = Bun.serve({
     port: PORT,
