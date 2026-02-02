@@ -236,8 +236,5 @@ bun run dev
 **Production Build**:
 ```bash
 docker compose -f docker-compose.yml build
-# Or use production Dockerfile explicitly:
-docker build -f packages/server/Dockerfile.prod -t tiny-inventory-server .
-docker build -f packages/web/Dockerfile.prod -t tiny-inventory-web .
 ```
 ---
