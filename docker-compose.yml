@@ -1,9 +1,12 @@
+# Coolify: this file is the single source of truth. Env vars with ${VAR:-default}
+# appear in the Coolify UI. Coolify appends the resource UUID to volume names so
+# mongodb_data persists across redeploys for this stack.
 services:
   mongodb:
     image: mongo:7
-    container_name: tiny-inventory-mongodb-${NODE_ENV:-prod}
+    # No container_name so Coolify can manage identity; service name stays "mongodb" for MONGODB_URI
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"  # bind to localhost only so MongoDB is not exposed on the host
     volumes:
       - mongodb_data:/data/db
     environment:
@@ -24,12 +27,11 @@ services:
     build:
       context: .
       dockerfile: packages/server/Dockerfile
-    container_name: tiny-inventory-server-${NODE_ENV:-prod}
     ports:
       - "4000:4000"
     environment:
-      PORT: 4000
-      MONGODB_URI: mongodb://mongodb:27017/tiny-inventory
+      PORT: ${PORT:-4000}
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongodb:27017/tiny-inventory}
       NODE_ENV: ${NODE_ENV:-development}
       CORS_ORIGIN: ${CORS_ORIGIN:-}
       SERVICE_URL_WEB: ${SERVICE_URL_WEB:-}
@@ -49,7 +51,6 @@ services:
       dockerfile: packages/web/Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:4000}
-    container_name: tiny-inventory-web-${NODE_ENV:-prod}
     ports:
       - "3000:3000"
     environment:

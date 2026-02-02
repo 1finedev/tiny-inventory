@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -7,6 +8,25 @@ import { requestId } from "hono/request-id";
 import { connectDatabase, seedDatabase } from "@/config";
 import { errorHandler, rateLimit } from "@/middleware";
 import { inventoryRoutes, storeRoutes, productRoutes } from "@/routes";
+
+// Load root .env when running via turbo (cwd is packages/server)
+const rootEnv = join(process.cwd(), "../../.env");
+try {
+  const text = await Bun.file(rootEnv).text();
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith("#")) {
+      const eq = trimmed.indexOf("=");
+      if (eq > 0) {
+        const key = trimmed.slice(0, eq).trim();
+        const value = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
+        if (key && !(key in process.env)) process.env[key] = value;
+      }
+    }
+  }
+} catch {
+  // no root .env or not running from monorepo
+}
 
 const app = new Hono();
 

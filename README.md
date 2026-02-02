@@ -221,7 +221,7 @@ packages/
 # Prerequisites: Bun, Docker
 
 bun install                    # Install dependencies
-docker compose up mongo -d     # Start MongoDB
+docker compose up mongodb -d  # Start MongoDB
 bun run dev                    # Start server + web (Turborepo)
 ```
 
@@ -231,7 +231,7 @@ bun run dev                    # Start server + web (Turborepo)
 # Copy .env.example to .env at repo root; server loads root .env when running bun run dev
 bun run dev
 ```
-**Environment Variables**: Copy `.env.example` to `.env` at the repo root and configure as needed. The server loads this file when started via `bun run dev`. The database **resees on every server startup** (no seed toggles).
+**Environment Variables**: Copy `.env.example` to `.env` at the repo root and configure as needed. The server loads this file when started via `bun run dev`. The database **resees on every server startup** (every deploy).
 
 **Production Build**:
 ```bash
@@ -240,5 +240,4 @@ docker compose -f docker-compose.yml build
 docker build -f packages/server/Dockerfile.prod -t tiny-inventory-server .
 docker build -f packages/web/Dockerfile.prod -t tiny-inventory-web .
 ```
-
 ---
