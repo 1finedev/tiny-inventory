@@ -41,6 +41,8 @@ Seed data loads automatically. **25 stores across 6 continents** (NYC, Tokyo, Lo
 - Per-store aggregations: total stock, total value, low stock count
 - Computed via MongoDB aggregation pipeline in single query
 
+**List view:** Store list (`/stores`) and per-store products (`/stores/:id/products`). **Detail/edit view:** Product detail page (`/stores/:id/products/:id`) for viewing and editing inventory.
+
 ---
 
 ## Frontend Highlights
@@ -59,28 +61,9 @@ Seed data loads automatically. **25 stores across 6 continents** (NYC, Tokyo, Lo
 
 ## API Sketch
 
-```
-GET    /api/v1/inventory                     # List all (filterable, paginated)
-GET    /api/v1/inventory/:id                 # Get single item
-
-GET    /api/v1/stores                        # List stores (with productCount)
-POST   /api/v1/stores                        # Create store
-GET    /api/v1/stores/:id                    # Get store (by ID or slug)
-PATCH  /api/v1/stores/:id                    # Update store
-DELETE /api/v1/stores/:id                    # Soft delete store
-
-GET    /api/v1/stores/:id/metrics            # Store metrics (aggregation)
-PATCH  /api/v1/stores/:id/inventory/:productId  # Update inventory
-
-GET    /api/v1/products                      # List products
-POST   /api/v1/products                      # Create product
-PATCH  /api/v1/products/:id                  # Update product
-DELETE /api/v1/products/:id                  # Soft delete product
-```
-
-**Filtering** (on `/inventory`): `?storeId=&search=&category=&minPrice=&maxPrice=&lowStockOnly=true`  
-**Search**: Queries SKU/product text via MongoDB text index + exact SKU; store name via case-insensitive match  
-**Pagination**: `?page=1&limit=25` (max 25 per request, frontend uses infinite scroll)
+- **Stores** — `GET/POST/PATCH/DELETE /api/v1/stores`, `GET /api/v1/stores/:id`, `GET /api/v1/stores/:id/metrics`, `PATCH /api/v1/stores/:id/inventory/:productId`
+- **Products** — `GET/POST/PATCH/DELETE /api/v1/products`, `GET /api/v1/products/:id`
+- **Inventory** — `GET /api/v1/inventory` (filterable: storeId, search, category, minPrice, maxPrice, lowStockOnly; pagination: page, limit max 25), `GET /api/v1/inventory/:id`
 
 ---
 
@@ -91,8 +74,10 @@ DELETE /api/v1/products/:id                  # Soft delete product
 | Decision | Rationale |
 |----------|-----------|
 | **Hono + Bun** | Lightweight HTTP framework with excellent TypeScript support. Faster cold starts than Express, simpler API. Hono's `onError` catches all async errors automatically. No `catchAsync` wrappers needed. |
-| **MongoDB** | Document model fits store/product/inventory relationships. Aggregation pipelines enable metrics without application-level computation. |
+| **MongoDB** | We chose a document store because we expect production needs (aggregation-heavy analytics, flexible schema evolution, single-query metrics/search/pagination) to align better with this model. Store/product/inventory fit naturally as documents; the non-trivial operation (per-store metrics) is one aggregation in the service layer. Text index + `$lookup`/`$facet` keep list, search, and pagination in one place. |
 | **Monorepo (Turborepo)** | Shared types between frontend and backend. Single `bun run dev` starts everything. |
+| **Server and web under `packages/`** | Turborepo monorepo: shared types and single `bun run dev`. Docker still builds each app from its own Dockerfile; the deliverable's server/web are present as `packages/server` and `packages/web`. |
+| **Service layer** | Controllers parse request and format response; business logic (DB, aggregations) lives in services. |
 | **Zod schemas in shared package** | Single source of truth for validation. Backend validates requests, frontend validates responses. Full type safety across the stack. |
 
 ### Data Modeling
@@ -144,8 +129,7 @@ DELETE /api/v1/products/:id                  # Soft delete product
 
 | Decision | Rationale |
 |----------|-----------|
-| **Text index for products** | Faster than regex on joined fields; uses `Product` text index for name/category + exact SKU match. Trade-off: token-based search, not arbitrary substring matches. |
-| **Regex for store name** | Keeps partial store name matching. Trade-off: still a regex scan on stores (small dataset), not a text search. |
+| **Text index for products** | Faster than regex on joined fields; uses `Product` text index for name/category + exact SKU match. Trade-off: token-based search, not arbitrary substring matches. if we were in prod, we could have a search layer  like OpenSearch or Typsense or Atlas |
 | **Early empty result** | If no matching product/store IDs are found, API returns empty results without running the aggregation pipeline. |
 
 
@@ -181,13 +165,9 @@ cd packages/web && bun test
 
 ## If I Had More Time
 
-| Priority | Enhancement | Why |
-|----------|-------------|-----|
-| 1 | **E2E Tests** | Playwright/Cypress for critical flows: create store → add product → update inventory. These are currently untested at the browser level. |
-| 2 | **Error Recovery UI** | Retry buttons for failed API calls, more detailed error messages (not just generic "Failed to save"). Consider snackbar/toast notifications separate from modal errors. |
-| 3 | **Aggregation Pipeline Tests** | Unit tests specifically for `$facet` + `$group` aggregations to catch bugs in metrics calculations. Currently only tested via integration tests. |
-| 4 | **Redis Cache Layer** | Cache `/stores` endpoint with product counts. Invalidate on mutations. Improves response time for large datasets. |
-| 5 | **Request Validation Tests** | Test edge cases: duplicate SKU, price validation errors, oversized pagination requests. Currently relies on schema validation alone. |
+- **E2E tests** — Playwright/Cypress for critical flows: create store → add product → update inventory (currently untested at the browser level).
+- **Error recovery UI** — Retry buttons for failed API calls, clearer error messages, snackbar/toast separate from modal errors.
+- **Aggregation pipeline tests** — Unit tests for `$facet`/`$group` metrics; Redis cache for `/stores` with invalidation on mutations.
 
 ---
 
@@ -198,8 +178,9 @@ packages/
 ├── server/              # Hono + Bun + MongoDB
 │   └── src/
 │       ├── config/      # Database, seeding
-│       ├── controllers/ # Request handlers
+│       ├── controllers/ # Request handlers (thin: parse request, call service, send response)
 │       ├── lib/         # Errors, responses, pipelines
+│       ├── services/    # Business logic (inventory, products, stores)
 │       ├── middleware/  # Validation, error handling
 │       ├── models/      # Mongoose schemas with indexes
 │       ├── routes/      # Route definitions
