@@ -29,12 +29,16 @@ services:
       dockerfile: packages/server/Dockerfile
     ports:
       - "4000:4000"
+    # NODE_ENV=development (default) causes DB to be seeded on every startup
     environment:
       PORT: ${PORT:-4000}
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongodb:27017/tiny-inventory}
       NODE_ENV: ${NODE_ENV:-development}
       CORS_ORIGIN: ${CORS_ORIGIN:-}
       SERVICE_URL_WEB: ${SERVICE_URL_WEB:-}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-120}
+      RUN_SEED: ${RUN_SEED:-false}
     depends_on:
       mongodb:
         condition: service_healthy
