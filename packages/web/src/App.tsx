@@ -1,9 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Dashboard } from "@/pages/Dashboard";
-import { StoreList } from "@/pages/StoreList";
-import { StoreProducts } from "@/pages/StoreProducts";
-import { ProductDetail } from "@/pages/ProductDetail";
 
 function App() {
   return (
@@ -20,26 +17,26 @@ function App() {
             }
           />
           <Route
-            path="/stores"
+            path="/dashboard/product/:storeId/:productId"
             element={
               <ErrorBoundary>
-                <StoreList />
+                <Dashboard />
               </ErrorBoundary>
             }
           />
           <Route
-            path="/stores/:storeId/products"
+            path="/dashboard/add-product"
             element={
               <ErrorBoundary>
-                <StoreProducts />
+                <Dashboard />
               </ErrorBoundary>
             }
           />
           <Route
-            path="/stores/:storeId/products/:productId"
+            path="/dashboard/stores"
             element={
               <ErrorBoundary>
-                <ProductDetail />
+                <Dashboard />
               </ErrorBoundary>
             }
           />

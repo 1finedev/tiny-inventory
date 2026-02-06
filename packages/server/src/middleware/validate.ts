@@ -8,17 +8,20 @@ export function validate(schema: ZodSchema) {
       const query = c.req.query();
       const params = c.req.param();
 
-      let body = {};
+      let body: Record<string, unknown> = {};
       const contentType = c.req.header("content-type");
+      
       if (contentType?.includes("application/json")) {
         try {
-          body = await c.req.json();
+          body = (await c.req.json()) as Record<string, unknown>;
         } catch {
-          // Invalid JSON - continue with empty object
+          /* invalid JSON → empty body */
         }
       }
 
-      await schema.parseAsync({ ...query, ...params, ...body });
+      const merged = { ...query, ...params, ...body };
+      const parsed = await schema.parseAsync(merged);
+      c.set("validatedBody", parsed as Record<string, unknown>);
       await next();
     } catch (error) {
       if (error instanceof ZodError) {

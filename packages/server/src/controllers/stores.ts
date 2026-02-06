@@ -14,14 +14,14 @@ export async function getStore(c: Context) {
 }
 
 export async function createStore(c: Context) {
-  const body = await c.req.json();
+  const body = c.get("validatedBody") as Record<string, unknown>;
   const store = await storeService.createStore(body);
   return success(c, store, "Store created", 201);
 }
 
 export async function updateStore(c: Context) {
   const { id } = c.req.param();
-  const body = await c.req.json();
+  const body = c.get("validatedBody") as Record<string, unknown>;
   const store = await storeService.updateStore(id, body);
   return success(c, store, "Store updated");
 }

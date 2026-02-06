@@ -8,7 +8,8 @@ export type SortOption =
   | "price-desc"
   | "stock-asc"
   | "stock-desc"
-  | "category";
+  | "category"
+  | "store";
 
 interface UseUrlStateOptions {
   stores: Store[];

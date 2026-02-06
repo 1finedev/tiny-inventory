@@ -16,6 +16,17 @@ export function useStores() {
     [stores]
   );
 
+  /** Local update after removing a product from a store. Avoids refetching all stores. */
+  const decrementStoreProductCount = useCallback((storeId: string) => {
+    setStores((prev) =>
+      prev.map((s) =>
+        s._id === storeId
+          ? { ...s, productCount: Math.max(0, (s.productCount ?? 0) - 1) }
+          : s
+      )
+    );
+  }, []);
+
   useEffect(() => {
     fetchStores();
   }, [fetchStores]);
@@ -24,5 +35,6 @@ export function useStores() {
     stores,
     allProductsCount,
     fetchStores,
+    decrementStoreProductCount,
   };
 }

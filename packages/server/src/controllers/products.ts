@@ -14,14 +14,14 @@ export async function getProduct(c: Context) {
 }
 
 export async function createProduct(c: Context) {
-  const body = await c.req.json();
+  const body = c.get("validatedBody") as Record<string, unknown>;
   const product = await productService.createProduct(body);
   return success(c, product, "Product created", 201);
 }
 
 export async function updateProduct(c: Context) {
   const { id } = c.req.param();
-  const body = await c.req.json();
+  const body = c.get("validatedBody") as Record<string, unknown>;
   const product = await productService.updateProduct(id, body);
   return success(c, product, "Product updated");
 }

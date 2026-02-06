@@ -7,6 +7,10 @@ export const objectIdParamSchema = z.object({
   id: objectIdSchema,
 });
 
+export const idParamSchema = z.object({
+  id: z.string().trim().min(1, "ID is required"),
+});
+
 export const storeIdParamSchema = z.object({
   storeId: objectIdSchema,
 });
@@ -31,6 +35,8 @@ export const productCreateSchema = z.object({
 
 export const productUpdateSchema = productCreateSchema.partial();
 
+const inventorySortOptions = ["name", "store", "category", "price-asc", "price-desc", "stock-asc", "stock-desc"] as const;
+
 export const inventoryQuerySchema = z.object({
   storeId: z.string().trim().refine((v) => !v || isObjectIdOrHexString(v), "Invalid Store ID").optional(),
   search: z.string().trim().max(100).optional(),
@@ -38,6 +44,7 @@ export const inventoryQuerySchema = z.object({
   minPrice: z.coerce.number().min(0).optional(),
   maxPrice: z.coerce.number().min(0).optional(),
   lowStockOnly: z.coerce.boolean().optional(),
+  sort: z.enum(inventorySortOptions).optional(),
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(25).catch(25).default(25),
 });

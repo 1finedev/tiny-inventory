@@ -9,7 +9,7 @@ docker compose up --build
 ```
 
 - **Frontend**: http://localhost:3000  
-- **Backend**: http://localhost:4000/api/v1/alive
+- **Backend**: http://localhost:4000/api/v1/alive (liveness only; no DB ping to avoid abuse)
 
 
 Seed data loads automatically. **25 stores across 6 continents** (NYC, Tokyo, London, São Paulo, Lagos, Sydney...), **86 products** across 8 categories, and drastic store variety (flagship with all 86 products and empty new store with 0).
@@ -21,9 +21,9 @@ Seed data loads automatically. **25 stores across 6 continents** (NYC, Tokyo, Lo
 ### Dashboard
 - View all inventory across stores or filter by individual store
 - **Unified search** across SKU, product name, category, and store name (one search box, multiple fields)
-- Filter by category, price range, or low stock status
 - Sort by name, price, stock level, or category
 - Infinite scroll with IntersectionObserver
+- **Filtering:** The API supports filtering by category, price range (`minPrice`/`maxPrice`), and low-stock-only; the current UI exposes search, store filter, and sort. Use the API directly for category/price/low-stock filters (e.g. `GET /api/v1/inventory?category=Electronics&lowStockOnly=true`).
 
 ### Store Management
 - Create, edit, and delete stores
@@ -41,7 +41,7 @@ Seed data loads automatically. **25 stores across 6 continents** (NYC, Tokyo, Lo
 - Per-store aggregations: total stock, total value, low stock count
 - Computed via MongoDB aggregation pipeline in single query
 
-**List view:** Store list (`/stores`) and per-store products (`/stores/:id/products`). **Detail/edit view:** Product detail page (`/stores/:id/products/:id`) for viewing and editing inventory.
+**List view:** Dashboard (`/dashboard`) — filter by store, search, sort; infinite scroll. **Detail/edit view:** Product detail (`/dashboard/product/:storeId/:productId`) — same layout and styling, edit quantity and low-stock threshold.
 
 ---
 
@@ -123,6 +123,7 @@ Seed data loads automatically. **25 stores across 6 continents** (NYC, Tokyo, Lo
 | **Lean queries** | `.lean()` on read operations returns plain objects, bypassing Mongoose document overhead. |
 | **Reusable pipeline helpers** | Aggregation pipelines extracted to `lib/pipelines.ts`. DRY, testable, consistent. |
 | **No Redis** | MongoDB indexes handle current query patterns efficiently. Would add caching layer if read latency becomes an issue at scale. |
+| **Rate limiting (in-memory)** | Per-process in-memory store; fine for single instance. For multi-instance production, use a shared store (e.g. Redis) so limits are global. |
 | **Inventory search pre-filter** | Search resolves product/store IDs first, then filters inventory by IDs before aggregation to avoid regex scans on joined fields. |
 
 ### Search Trade-offs
@@ -190,7 +191,7 @@ packages/
 │       ├── components/  # Reusable UI (Button, Card, Table, etc.)
 │       ├── hooks/       # useDebounce
 │       ├── lib/         # API client, utilities
-│       └── pages/       # Dashboard, StoreProducts, ProductDetail
+│       └── pages/       # Dashboard (list), DashboardProductDetail (detail/edit)
 └── shared/              # Zod schemas, TypeScript types
 ```
 
@@ -212,7 +213,7 @@ bun run dev                    # Start server + web (Turborepo)
 # Copy .env.example to .env at repo root; server loads root .env when running bun run dev
 bun run dev
 ```
-**Environment Variables**: Copy `.env.example` to `.env` at the repo root and configure as needed. The server loads this file when started via `bun run dev`. The database **resees on every server startup** (every deploy).
+**Environment Variables**: Copy `.env.example` to `.env` at the repo root and configure as needed. The server loads this file when started via `bun run dev`. **Seed data** runs only when `NODE_ENV !== "production"` or when `RUN_SEED=true`; in production the database is not auto-seeded.
 
 **Production Build**:
 ```bash

@@ -5,6 +5,15 @@ import mongoose from "mongoose";
 
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+export type InventorySortOption =
+  | "name"
+  | "store"
+  | "category"
+  | "price-asc"
+  | "price-desc"
+  | "stock-asc"
+  | "stock-desc";
+
 export interface GetAllInventoryParams {
   storeId?: string;
   search?: string;
@@ -12,6 +21,7 @@ export interface GetAllInventoryParams {
   minPrice?: number;
   maxPrice?: number;
   lowStockOnly?: boolean;
+  sort?: InventorySortOption;
   page?: number;
   limit?: number;
 }
@@ -24,9 +34,31 @@ export class InventoryService {
     const minPrice = params.minPrice;
     const maxPrice = params.maxPrice;
     const lowStockOnly = params.lowStockOnly ?? false;
+    const sortOption = params.sort ?? "name";
     const page = Math.max(1, params.page ?? 1);
     const limit = Math.min(Math.max(1, params.limit ?? 25), 25);
     const skip = (page - 1) * limit;
+
+    const sortStage: Record<string, 1 | -1> = (() => {
+      switch (sortOption) {
+        case "name":
+          return { "product.name": 1 };
+        case "store":
+          return { "store.name": 1 };
+        case "category":
+          return { "product.category": 1, "product.name": 1 };
+        case "price-asc":
+          return { "product.price": 1, "product.name": 1 };
+        case "price-desc":
+          return { "product.price": -1, "product.name": 1 };
+        case "stock-asc":
+          return { quantity: 1, "product.name": 1 };
+        case "stock-desc":
+          return { quantity: -1, "product.name": 1 };
+        default:
+          return { "store.name": 1, "product.name": 1 };
+      }
+    })();
 
     const matchStage: Record<string, unknown> = {};
     if (storeId && mongoose.Types.ObjectId.isValid(storeId)) {
@@ -87,7 +119,7 @@ export class InventoryService {
         $facet: {
           metadata: [{ $count: "total" }],
           data: [
-            { $sort: { "store.name": 1, "product.name": 1 } },
+            { $sort: sortStage },
             { $skip: skip },
             { $limit: limit },
             inventoryProjection,
@@ -184,10 +216,34 @@ export class InventoryService {
     const inventory = await Inventory.findOneAndUpdate(
       { storeId: store._id, productId: product._id },
       updateData,
-      { new: true, upsert: true, runValidators: true }
+      { new: true, upsert: true, runValidators: true, lean: true }
     );
 
+    if (!inventory) throw new AppError("Inventory update failed", 500);
     return inventory;
+  }
+
+  async removeProductFromStore(storeIdOrSlug: string, productId: string) {
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      throw new AppError("Invalid product ID", 400);
+    }
+
+    const storeQuery = mongoose.Types.ObjectId.isValid(storeIdOrSlug)
+      ? { _id: new mongoose.Types.ObjectId(storeIdOrSlug) }
+      : { slug: storeIdOrSlug };
+
+    const store = await Store.findOne(storeQuery).lean<IStore>().exec();
+    if (!store) throw new AppError("Store not found", 404);
+
+    const result = await Inventory.findOneAndUpdate(
+      { storeId: store._id, productId: new mongoose.Types.ObjectId(productId) },
+      { deletedAt: new Date() },
+      { new: true }
+    );
+
+    if (!result) {
+      throw new AppError("Inventory item not found", 404);
+    }
   }
 }
 

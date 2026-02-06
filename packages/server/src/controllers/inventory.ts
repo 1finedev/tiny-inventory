@@ -1,29 +1,14 @@
 import type { Context } from "hono";
-import { success, paginated } from "@/lib";
+import { success, paginated, deleted } from "@/lib";
 import { inventoryService } from "@/services";
+import type { z } from "zod";
+import type { inventoryQuerySchema } from "@/validation/schemas";
+
+type InventoryQuery = z.infer<typeof inventoryQuerySchema>;
 
 export async function getAllInventory(c: Context) {
-  const query = c.req.query();
-  const storeId = query.storeId?.trim();
-  const search = query.search?.trim();
-  const category = query.category?.trim();
-  const minPrice = query.minPrice ? parseFloat(query.minPrice) : undefined;
-  const maxPrice = query.maxPrice ? parseFloat(query.maxPrice) : undefined;
-  const lowStockOnly = query.lowStockOnly === "true";
-  const page = Math.max(1, parseInt(query.page || "1", 10));
-  const limit = Math.min(Math.max(1, parseInt(query.limit || "25", 10)), 25);
-
-  const result = await inventoryService.getAllInventory({
-    storeId,
-    search,
-    category,
-    minPrice,
-    maxPrice,
-    lowStockOnly,
-    page,
-    limit,
-  });
-
+  const query = c.get("validatedBody") as InventoryQuery;
+  const result = await inventoryService.getAllInventory(query);
   return paginated(c, result.data, { page: result.page, limit: result.limit, total: result.total }, "Inventory fetched");
 }
 
@@ -41,7 +26,13 @@ export async function getStoreMetrics(c: Context) {
 
 export async function updateInventory(c: Context) {
   const { storeIdOrSlug, productId } = c.req.param();
-  const body = await c.req.json();
+  const body = c.get("validatedBody") as { quantity?: number; lowStockThreshold?: number };
   const inventory = await inventoryService.updateInventory(storeIdOrSlug, productId, body);
   return success(c, inventory, "Inventory updated");
+}
+
+export async function removeProductFromStore(c: Context) {
+  const { storeIdOrSlug, productId } = c.req.param();
+  await inventoryService.removeProductFromStore(storeIdOrSlug, productId);
+  return deleted(c, "Product removed from store");
 }

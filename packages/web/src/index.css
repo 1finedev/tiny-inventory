@@ -361,6 +361,7 @@ body::before {
   opacity: 0;
   background: linear-gradient(135deg, var(--amber-flare), transparent 50%);
   transition: opacity 0.4s ease;
+  pointer-events: none;
 }
 
 .card:hover {

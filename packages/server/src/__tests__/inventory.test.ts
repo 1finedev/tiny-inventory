@@ -59,7 +59,9 @@ describe("Inventory API", () => {
         });
         expect(true).toBe(false);
       } catch (error: any) {
-        expect(error.code).toBe(11000);
+        const code = error.code ?? error.writeErrors?.[0]?.code;
+        const isDuplicateKey = code === 11000 || /E11000|duplicate key/i.test(String(error.message ?? ""));
+        expect(isDuplicateKey).toBe(true);
       }
     });
 

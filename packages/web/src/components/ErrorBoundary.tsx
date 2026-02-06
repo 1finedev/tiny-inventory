@@ -24,27 +24,40 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError && this.state.error) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-          <div className="bg-white p-8 rounded-xl shadow-md border border-red-200 max-w-lg">
-            <h1 className="text-xl font-bold text-red-900 mb-2">
+        <div
+          className="min-h-screen flex items-center justify-center p-4"
+          style={{ background: "var(--noir-void)" }}
+        >
+          <div
+            className="p-8 rounded-xl max-w-lg border shadow-lg"
+            style={{
+              background: "var(--noir-surface)",
+              borderColor: "var(--noir-border)",
+              boxShadow: "var(--shadow-elevated)",
+            }}
+          >
+            <h1
+              className="text-xl font-bold mb-2 font-display"
+              style={{ color: "var(--noir-bright)" }}
+            >
               Something went wrong
             </h1>
-            <p className="text-red-700 text-sm mb-4 font-mono break-words">
+            <p
+              className="text-sm mb-6 font-mono break-words"
+              style={{ color: "var(--status-danger)" }}
+            >
               {this.state.error.message}
             </p>
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => this.setState({ hasError: false, error: null })}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="btn btn-primary"
               >
                 Try again
               </button>
-              <Link
-                to="/stores"
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Back to Stores
+              <Link to="/dashboard" className="btn btn-ghost">
+                Back to Dashboard
               </Link>
             </div>
           </div>
